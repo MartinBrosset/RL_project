@@ -9,6 +9,10 @@ import streamlit as st
 from streamlit_folium import st_folium
 from streamlit_folium import folium_static
 import geopandas as gpd
+import plotly.express as px
+import plotly.graph_objects as go
+
+
 
 
 st.set_page_config(
@@ -79,12 +83,15 @@ def load_data_geo():
 
 
 st.title('New York City Check-Ins Analysis')
+st.write("")
 
 analysis = st.sidebar.selectbox(
     'Select the analysis',
     ('Temporal analysis', 'Geographical analysis'), key="disabled")
 
 if analysis == "Temporal analysis":
+
+    col1, col2 = st.columns(2)
 
     vue_choisie = st.sidebar.radio("Select the analysis temporality", ('Daily vision', 'Weekly vision'))
 
@@ -93,7 +100,7 @@ if analysis == "Temporal analysis":
     elements = ['School', 'Restaurant', 'Shopping', 'Night Club']
     valeur_selectionnee = st.sidebar.radio("Select the establishement type", elements)
 
-    st.markdown(f"## Geographical view of the visits to {valeur_selectionnee.lower()}s over time with a {vue_choisie.lower()} :")
+    
 
     if valeur_selectionnee == "School":
 
@@ -126,43 +133,45 @@ if analysis == "Temporal analysis":
                         max_opacity=1,
                         position='bottomright')
     hm.add_to(m)
+    with col1:
+        st.markdown(f"## <center>Geographical view of the visits to {valeur_selectionnee.lower()}s over time with a {vue_choisie.lower()}</center>", unsafe_allow_html=True)
+        folium_static(m)
 
-    folium_static(m)
+    with col2:
+        st.markdown(f"## <center>Aggregated view of the visits with a {vue_choisie.lower()}</center>", unsafe_allow_html=True)
 
-    st.markdown(f"## Aggregated view of the visits with a {vue_choisie.lower()} :")
+        if valeur_selectionnee in data:
+            keys = list(data[valeur_selectionnee].keys())
+            frequences = [len(data[valeur_selectionnee][key]) for key in keys]
+            total_check_ins = sum(frequences)
 
-    if valeur_selectionnee in data:
+            if total_check_ins > 0:
+                frequences = [freq / total_check_ins for freq in frequences]
 
-        keys = list(data[valeur_selectionnee].keys())  # Assurez-vous que ceci donne les jours/nombres attendus
-        frequences = [len(data[valeur_selectionnee][key]) for key in keys]  # Utilisez la valeur directement
-        #print(frequences)
-        total_check_ins = sum(frequences)
-        
-        if total_check_ins > 0:
-            frequences = [freq / total_check_ins for freq in frequences]
+            fig = go.Figure(go.Bar(x=keys, y=frequences))
 
-        plt.figure(figsize=(10, 6))
-        plt.bar(range(len(frequences)), frequences, color='skyblue')
-        
-        if vue_choisie == 'Daily vision':
-            plt.xlabel('Hour of the day')
-        else:  # 'Weekly vision'
-            plt.xlabel('Day of the week')
-        
-        plt.ylabel('Visits frequency (en %)')
-        plt.title(f'Fisits frequency over time for {valeur_selectionnee}')
-        plt.xticks(range(len(frequences)), keys, rotation=45)
-        
-        plt.gca().set_yticklabels(['{:.0f}%'.format(y*100) for y in plt.gca().get_yticks()])
-        
-        plt.tight_layout()
-        st.pyplot(plt)
+            if vue_choisie == 'Daily vision':
+                fig.update_layout(xaxis_title='Hour of the day')
+            else:  # 'Weekly vision'
+                fig.update_layout(xaxis_title='Day of the week')
 
-    st.markdown(f"{text_analysis[valeur_selectionnee][vue_choisie]}", unsafe_allow_html=True)
+            fig.update_layout(yaxis_title='Visits frequency (%)',
+                            title=f'Visits frequency over time for {valeur_selectionnee}',
+                            xaxis=dict(tickangle=45),
+                            yaxis_tickformat=",.0%",
+                            width=800,
+                            height=500)
+            fig.update_layout(title=dict(x=0.33))
+            fig.update_layout(width=850, height=600)
+            st.plotly_chart(fig)
+
+        st.markdown(f"{text_analysis[valeur_selectionnee][vue_choisie]}", unsafe_allow_html=True)
 
 elif analysis == 'Geographical analysis':
 
     m, nybb, data, ny_uni = load_data_geo()
+
+    col1, col2 = st.columns(2)
 
     elements = ['School', 'Restaurant', 'Shopping', 'Night Club']
     valeur_selectionnee = st.sidebar.radio("Select the establishement type", elements)
@@ -181,11 +190,7 @@ elif analysis == 'Geographical analysis':
         legend_name=f'Number of {valeur_selectionnee.lower()} check-ins by neighborhood.',
         bins=50,
         highlight=True,
-        tooltip=folium.features.GeoJsonTooltip(
-        fields=['ntaname',valeur_selectionnee],
-        aliases=['ntaname',valeur_selectionnee],
-        style=("background-color: white; color: #333333; font-family: arial; font-size: 12px; padding: 10px;") 
-    )
+
     ).add_to(m)
 
     feature = folium.features.GeoJson(
@@ -226,4 +231,12 @@ elif analysis == 'Geographical analysis':
             opacity=0,
             parse_html=False).add_to(m)
 
-    folium_static(m)
+    fig = px.bar(data_selected.sort_values(by=valeur_selectionnee, ascending=False).head(10), x='ntaname', y=valeur_selectionnee, title=f'Top 10 Most Frequented Neighborhoods For {valeur_selectionnee}', labels={valeur_selectionnee: 'Count', 'ntaname': 'Neighborhood'})
+    fig.update_layout(title=dict(x=0.25))
+
+    with col1:
+        folium_static(m)
+
+    with col2:
+        fig.update_layout(width=850, height=650)
+        st.plotly_chart(fig, use_container_width=True)
