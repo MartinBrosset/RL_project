@@ -44,8 +44,17 @@ def load_data_temporal(vue):
                                 'Weekly vision': 'The New-Yorkers are pretty constant when it comes to restaurants visits, but we can see a slight increase over the week and then a decrase on Sunday. The New-Yorkers appear to eat more at home on this special day.'},
                 }
     
+    repartition = {}
+    types = list(data.keys())
+    periods = list(data[types[0]].keys())
 
-    return data, m, ny_uni, text_analysis
+    for period in periods:
+        repartition[period] = {}
+        for type_ in types:
+            repartition[period][type_] = len(data[type_][period])
+
+    return data, m, ny_uni, text_analysis, repartition
+
 
 @st.cache_data
 def load_data_geo():
@@ -81,6 +90,17 @@ def load_data_geo():
     return m, nybb, data, ny_uni
 
 
+def plot_pie_chart(hour, repartition):
+    data = repartition[hour]
+    labels = list(data.keys())
+    values = list(data.values())
+    
+    fig = go.Figure(data=[go.Pie(labels=labels, values=values)])
+    fig.update_layout(showlegend=True)
+    
+    return fig
+
+
 
 st.title('New York City Check-Ins Analysis')
 st.write("")
@@ -95,7 +115,7 @@ if analysis == "Temporal analysis":
 
     vue_choisie = st.sidebar.radio("Select the analysis temporality", ('Daily vision', 'Weekly vision'))
 
-    data, m, ny_uni, text_analysis = load_data_temporal(vue_choisie)
+    data, m, ny_uni, text_analysis, repartition = load_data_temporal(vue_choisie)
 
     elements = ['School', 'Restaurant', 'Shopping', 'Night Club']
     valeur_selectionnee = st.sidebar.radio("Select the establishement type", elements)
@@ -130,12 +150,13 @@ if analysis == "Temporal analysis":
                         auto_play=True,
                         max_speed=3,
                         min_speed=0.5,
-                        max_opacity=1,
+                        max_opacity=0.5,
                         position='bottomright')
     hm.add_to(m)
+
     with col1:
         st.markdown(f"## <center>Geographical view of the visits to {valeur_selectionnee.lower()}s over time with a {vue_choisie.lower()}</center>", unsafe_allow_html=True)
-        folium_static(m)
+        folium_static(m, width=500)
 
     with col2:
         st.markdown(f"## <center>Aggregated view of the visits with a {vue_choisie.lower()}</center>", unsafe_allow_html=True)
@@ -167,8 +188,21 @@ if analysis == "Temporal analysis":
 
         st.markdown(f"{text_analysis[valeur_selectionnee][vue_choisie]}", unsafe_allow_html=True)
 
-elif analysis == 'Geographical analysis':
+    # Add the pie chart
+    if vue_choisie == 'Daily vision':
+        selected_hour = st.slider('Select Hour:', min_value=0, max_value=23, value=12, step=1)
+        st.markdown(f"### Check-Ins Distribution by Place Type at {selected_hour}h")
+        st.plotly_chart(plot_pie_chart(selected_hour, repartition))
+    
+    else:
+        days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+        selected_day_n = st.slider('Select Day:', min_value=1, max_value=7, value=1, step=1)
+        selected_day = days[selected_day_n - 1]
+        st.markdown(f"### Check-Ins Distribution by Place Type on {selected_day}")
+        st.plotly_chart(plot_pie_chart(selected_day, repartition))
 
+elif analysis == 'Geographical analysis':
+    
     m, nybb, data, ny_uni = load_data_geo()
 
     col1, col2 = st.columns(2)
@@ -234,9 +268,22 @@ elif analysis == 'Geographical analysis':
     fig = px.bar(data_selected.sort_values(by=valeur_selectionnee, ascending=False).head(10), x='ntaname', y=valeur_selectionnee, title=f'Top 10 Most Frequented Neighborhoods For {valeur_selectionnee}', labels={valeur_selectionnee: 'Count', 'ntaname': 'Neighborhood'})
     fig.update_layout(title=dict(x=0.25))
 
+    top_nb = data_selected.sort_values(by=valeur_selectionnee, ascending=False).head(10).index
+    repartition = {}
+    for nb in top_nb:
+        repartition[data.iloc[nb]['ntaname']] = {'School': data.iloc[nb]['School'],
+                                                'Restaurant': data.iloc[nb]['Restaurant'],
+                                                'Shopping': data.iloc[nb]['Shopping'],
+                                                'Night Club': data.iloc[nb]['Night Club']}
+
     with col1:
-        folium_static(m)
+        folium_static(m, 500)
 
     with col2:
         fig.update_layout(width=850, height=650)
         st.plotly_chart(fig, use_container_width=True)
+
+    n = st.slider('Select Neighborhood:', min_value=1, max_value=10, value=1, step=1)
+    selected_nb = data.iloc[top_nb[n]]['ntaname']
+    st.markdown(f"### Check-Ins Distribution by Place Type in {selected_nb}")
+    st.plotly_chart(plot_pie_chart(selected_nb, repartition))
