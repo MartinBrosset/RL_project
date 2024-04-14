@@ -11,6 +11,7 @@ from streamlit_folium import folium_static
 import geopandas as gpd
 import plotly.express as px
 import plotly.graph_objects as go
+import plotly.express as px
 
 
 
@@ -48,10 +49,17 @@ def load_data_temporal(vue):
     types = list(data.keys())
     periods = list(data[types[0]].keys())
 
-    for period in periods:
-        repartition[period] = {}
-        for type_ in types:
-            repartition[period][type_] = len(data[type_][period])
+    # for period in periods:
+    #     repartition[period] = {}
+    #     for type_ in types:
+    #         repartition[period][type_] = len(data[type_][period])
+
+    repartition = pd.DataFrame(columns=['Place', 'period', 'checkins'])
+    types = list(data.keys())
+    periods = list(data[types[0]].keys())
+    for type_ in types:
+        for period in periods:
+            repartition = pd.concat([repartition, pd.DataFrame({'Place': [type_], 'period': [period], 'checkins': len(data[type_][period])})])
 
     return data, m, ny_uni, text_analysis, repartition
 
@@ -188,18 +196,31 @@ if analysis == "Temporal analysis":
 
         st.markdown(f"{text_analysis[valeur_selectionnee][vue_choisie]}", unsafe_allow_html=True)
 
-    # Add the pie chart
-    if vue_choisie == 'Daily vision':
-        selected_hour = st.slider('Select Hour:', min_value=0, max_value=23, value=12, step=1)
-        st.markdown(f"### Check-Ins Distribution by Place Type at {selected_hour}h")
-        st.plotly_chart(plot_pie_chart(selected_hour, repartition))
+    # # Add the pie chart
+    # if vue_choisie == 'Daily vision':
+    #     selected_hour = st.slider('Select Hour:', min_value=0, max_value=23, value=12, step=1)
+    #     st.markdown(f"### Check-Ins Distribution by Place Type at {selected_hour}h")
+    #     st.plotly_chart(plot_pie_chart(selected_hour, repartition))
     
-    else:
-        days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
-        selected_day_n = st.slider('Select Day:', min_value=1, max_value=7, value=1, step=1)
-        selected_day = days[selected_day_n - 1]
-        st.markdown(f"### Check-Ins Distribution by Place Type on {selected_day}")
-        st.plotly_chart(plot_pie_chart(selected_day, repartition))
+    # else:
+    #     days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+    #     selected_day_n = st.slider('Select Day:', min_value=1, max_value=7, value=1, step=1)
+    #     selected_day = days[selected_day_n - 1]
+    #     st.markdown(f"### Check-Ins Distribution by Place Type on {selected_day}")
+    #     st.plotly_chart(plot_pie_chart(selected_day, repartition))
+
+    # Stacked line plot
+    fig = px.area(repartition, x="period", y="checkins", color="Place", line_group="Place")
+
+    if vue_choisie == 'Daily vision':
+        st.markdown(f"### Number of Check-Ins by Place Type over time")
+        fig.update_layout(xaxis_title='Hour of the day', yaxis_title='Number of check-ins')
+        st.plotly_chart(fig)
+    elif vue_choisie == 'Weekly vision':
+        st.markdown(f"### Number of Check-Ins by Place Type over time")
+        fig.update_layout(xaxis_title='Day of the week', yaxis_title='Number of check-ins')
+        st.plotly_chart(fig)
+
 
 elif analysis == 'Geographical analysis':
     
