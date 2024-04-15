@@ -37,7 +37,7 @@ def load_data_temporal(vue):
     ny_uni = pd.read_csv('newyork_uni.csv')
     text_analysis = {'School':{'Daily vision':'Here we see the pike around 8AM which corresponds to the opening of the school buildings. After 6PM the schools start to close and the visits frequency drop.',
                         'Weekly vision': 'The schools are less frequencted the week-end where students take a break'},
-                'Night Club': {'Daily vision':'The nightclubs are active during the night,with a gradual increase up to midnight and a quick decrease.',
+                'Night Club': {'Daily vision':'The nightclubs are active during the night, with a gradual increase up to midnight and a quick decrease.',
                                 'Weekly vision': 'The nightclubs are getting crowded at the end of the week when the New-Yorkers need a break from their stressful week.'},
                 'Shopping': {'Daily vision':'The shopping venues are getting more and more visited untill 6PM, after that the visits decrease strongly',
                                 'Weekly vision': 'The New-Yorkers are pretty constant when it comes to shopping, the venues visits are pretty stable.'},
@@ -163,11 +163,11 @@ if analysis == "Temporal analysis":
     hm.add_to(m)
 
     with col1:
-        st.markdown(f"## <center>Geographical view of the visits to {valeur_selectionnee.lower()}s over time with a {vue_choisie.lower()}</center>", unsafe_allow_html=True)
+        st.markdown(f"### <center> Geographical view of the visits to {valeur_selectionnee.lower()}s over time with a {vue_choisie.lower()}</center>", unsafe_allow_html=True)
         folium_static(m, width=500)
 
     with col2:
-        st.markdown(f"## <center>Aggregated view of the visits with a {vue_choisie.lower()}</center>", unsafe_allow_html=True)
+        st.markdown(f"### <center> Aggregated view of the visits with a {vue_choisie.lower()}</center>", unsafe_allow_html=True)
 
         if valeur_selectionnee in data:
             keys = list(data[valeur_selectionnee].keys())
@@ -185,7 +185,7 @@ if analysis == "Temporal analysis":
                 fig.update_layout(xaxis_title='Day of the week')
 
             fig.update_layout(yaxis_title='Visits frequency (%)',
-                            title=f'Visits frequency over time for {valeur_selectionnee}',
+                            title=f'When do New Yorker visit {valeur_selectionnee}s ?',
                             xaxis=dict(tickangle=45),
                             yaxis_tickformat=",.0%",
                             width=800,
@@ -213,12 +213,12 @@ if analysis == "Temporal analysis":
     fig = px.area(repartition, x="period", y="checkins", color="Place", line_group="Place")
 
     if vue_choisie == 'Daily vision':
-        st.markdown(f"### Number of Check-Ins by Place Type over time")
-        fig.update_layout(xaxis_title='Hour of the day', yaxis_title='Number of check-ins')
+        st.markdown(f"### Number of check-ins by establishment over time")
+        fig.update_layout(xaxis_title='Hour of the day', yaxis_title='Number of check-ins', title = 'How does the city that never sleeps live ?')
         st.plotly_chart(fig)
     elif vue_choisie == 'Weekly vision':
-        st.markdown(f"### Number of Check-Ins by Place Type over time")
-        fig.update_layout(xaxis_title='Day of the week', yaxis_title='Number of check-ins')
+        st.markdown(f"### Number of check-ins by establishment over time")
+        fig.update_layout(xaxis_title='Day of the week', yaxis_title='Number of check-ins', title = 'How does the city that never sleeps live ?')
         st.plotly_chart(fig)
 
 
@@ -286,7 +286,7 @@ elif analysis == 'Geographical analysis':
             opacity=0,
             parse_html=False).add_to(m)
 
-    fig = px.bar(data_selected.sort_values(by=valeur_selectionnee, ascending=False).head(10), x='ntaname', y=valeur_selectionnee, title=f'Top 10 Most Frequented Neighborhoods For {valeur_selectionnee}', labels={valeur_selectionnee: 'Count', 'ntaname': 'Neighborhood'})
+    fig = px.bar(data_selected.sort_values(by=valeur_selectionnee, ascending=False).head(10), x='ntaname', y=valeur_selectionnee, title = " ", labels={valeur_selectionnee: 'Count', 'ntaname': 'Neighborhood'})
     fig.update_layout(title=dict(x=0.25))
 
     top_nb = data_selected.sort_values(by=valeur_selectionnee, ascending=False).head(10).index
@@ -298,13 +298,20 @@ elif analysis == 'Geographical analysis':
                                                 'Night Club': data.iloc[nb]['Night Club']}
 
     with col1:
+        st.markdown(f"### <center> Neighboorhod frequentation of {valeur_selectionnee.lower()}s </center>", unsafe_allow_html=True)
         folium_static(m, 500)
+        text_analysis2 = {'School': "The most visited neighbordhoods are the ones with schools (represented by black dots) in them. \n Center of Manhattan and Downtown Brooklyn are the area that receive the most students.",
+                         'Night Club': "The West Manhattan wins the palm of merrymakers. These neighborhoods are known to be the place to be to celebrate something." ,
+                         'Shopping': "It is no surprise that center Manhattan is the shopping spree of New York, especially the Time-Square which is known for its many shops that make tourists turn their heads.",
+                         'Restaurant': "The whole south of the Manhattan island appears to be the home of many restaurants."}
+        st.markdown(text_analysis2[valeur_selectionnee])
 
     with col2:
+        st.markdown(f'### <center> Top 10 Most Frequented Neighborhoods For {valeur_selectionnee}s </center>', unsafe_allow_html=True)
         fig.update_layout(width=850, height=650)
         st.plotly_chart(fig, use_container_width=True)
 
-    n = st.slider('Select Neighborhood:', min_value=1, max_value=10, value=1, step=1)
-    selected_nb = data.iloc[top_nb[n]]['ntaname']
+    n = st.slider('Select the top n neighborhood :', min_value=1, max_value=10, value=1, step=1)
+    selected_nb = data.iloc[top_nb[n-1]]['ntaname']
     st.markdown(f"### Check-Ins Distribution by Place Type in {selected_nb}")
     st.plotly_chart(plot_pie_chart(selected_nb, repartition))
