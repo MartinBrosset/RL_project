@@ -17,7 +17,7 @@ import plotly.express as px
 
 
 st.set_page_config(
-    page_title="st_folium Example",
+    page_title="NYC Check-ins analysis",
     page_icon="🔎",
     layout="wide"
 )
@@ -217,10 +217,9 @@ if analysis == "Temporal analysis":
         fig.update_layout(xaxis_title='Hour of the day', yaxis_title='Number of check-ins', title = 'How does the city that never sleeps live ?')
         st.plotly_chart(fig)
     elif vue_choisie == 'Weekly vision':
-        st.markdown(f"### Number of check-ins by establishment over time")
+        st.markdown(f"<h2 style='text-align: center;'>### Number of check-ins by establishment over time</h2>", unsafe_allow_html=True)
         fig.update_layout(xaxis_title='Day of the week', yaxis_title='Number of check-ins', title = 'How does the city that never sleeps live ?')
-        st.plotly_chart(fig)
-
+        st.plotly_chart(fig, use_container_width=True)  
 
 elif analysis == 'Geographical analysis':
     
@@ -313,5 +312,5 @@ elif analysis == 'Geographical analysis':
 
     n = st.slider('Select the top n neighborhood :', min_value=1, max_value=10, value=1, step=1)
     selected_nb = data.iloc[top_nb[n-1]]['ntaname']
-    st.markdown(f"### Check-Ins Distribution by Place Type in {selected_nb}")
-    st.plotly_chart(plot_pie_chart(selected_nb, repartition))
+    st.markdown(f"<h2 style='text-align: center;'>Check-Ins Distribution by Place Type in {selected_nb}</h2>", unsafe_allow_html=True)
+    st.plotly_chart(plot_pie_chart(selected_nb, repartition), use_container_width=True)
