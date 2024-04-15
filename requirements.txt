@@ -1,0 +1,9 @@
+pandas
+folium
+matplotlib
+numpy
+pickle5; python_version < "3.8"
+streamlit
+streamlit-folium
+geopandas
+plotly
