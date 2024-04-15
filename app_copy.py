@@ -213,11 +213,12 @@ if analysis == "Temporal analysis":
     fig = px.area(repartition, x="period", y="checkins", color="Place", line_group="Place")
 
     if vue_choisie == 'Daily vision':
-        st.markdown(f"### Number of check-ins by establishment over time")
+
+        st.markdown(f"<h2 style='text-align: center;'> Number of check-ins by establishment over time</h2>", unsafe_allow_html=True)
         fig.update_layout(xaxis_title='Hour of the day', yaxis_title='Number of check-ins', title = 'How does the city that never sleeps live ?')
-        st.plotly_chart(fig)
+        st.plotly_chart(fig, use_container_width=True)  
     elif vue_choisie == 'Weekly vision':
-        st.markdown(f"<h2 style='text-align: center;'>### Number of check-ins by establishment over time</h2>", unsafe_allow_html=True)
+        st.markdown(f"<h2 style='text-align: center;'> Number of check-ins by establishment over time</h2>", unsafe_allow_html=True)
         fig.update_layout(xaxis_title='Day of the week', yaxis_title='Number of check-ins', title = 'How does the city that never sleeps live ?')
         st.plotly_chart(fig, use_container_width=True)  
 
